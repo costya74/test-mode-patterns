@@ -1,16 +1,15 @@
 package ru.netology;
 
-import com.codeborne.selenide.Condition;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static ru.netology.DataGenerator.Registration.getRegisteredUser;
-import static ru.netology.DataGenerator.Registration.getUser;
-import static ru.netology.DataGenerator.getRandomLogin;
-import static ru.netology.DataGenerator.getRandomPassword;
+import static ru.netology.DataGenerator.Registration.*;
+
 
 public class AuthTest {
     @BeforeEach
@@ -19,62 +18,40 @@ public class AuthTest {
     }
 
     @Test
-    @DisplayName("Should successfully login with active registered user")
-    void shouldSuccessFulLoginIsRegisteredUser() {
-        var registeredUser = getRegisteredUser("active");
-        $("[data-test-id=login] input").setValue(registeredUser.getLogin());
-        $("[data-test-id=password] input").setValue(registeredUser.getPassword());
-        $(".button").shouldHave(Condition.text("Продолжить")).click();
-        $(".heading").shouldBe(Condition.text("Личный кабинет"));
+    void shouldSendFormValid() {
+        UserInfo validUserInfo = DataGenerator.Registration.generateValidUser();
+        $("[data-test-id=login] input").setValue(validUserInfo.getLogin());
+        $("[data-test-id=password] input").setValue(validUserInfo.getPassword());
+        $("button[data-test-id=action-login]").click();
+        $(".App_appContainer__3jRx1").shouldBe(visible).shouldHave(text("Личный кабинет"));
     }
 
     @Test
-    @DisplayName("Should get error message if login with not registered user")
-    void shouldErrorNotRegisteredUse() {
-        var notRegisteredUser = getUser("active");
-        $("[data-test-id=login] input").setValue(notRegisteredUser.getLogin());
-        $("[data-test-id=password] input").setValue(notRegisteredUser.getPassword());
-        $(".button").shouldHave(Condition.text("Продолжить")).click();
-        $("[data-test-id=error-notification]").shouldBe(Condition.visible)
-                .shouldHave(Condition.text("Ошибка" +
-                        " Ошибка! Неверно указан логин или пароль"));
+    void shouldSendFormBlockedUser() {
+        UserInfo blockedUserInfo = generateBlockedUser();
+        $("[data-test-id=login] input").setValue(blockedUserInfo.getLogin());
+        $("[data-test-id=password] input").setValue(blockedUserInfo.getPassword());
+        $("button[data-test-id=action-login]").click();
+        $(withText("Пользователь заблокирован")).shouldBe(visible);
     }
 
     @Test
-    @DisplayName("Should get error message if login with blocked registered user")
-    void shouldErrorBlockedUser() {
-        var blockedUser = getRegisteredUser("blocked");
-        $("[data-test-id=login] input").setValue(blockedUser.getLogin());
-        $("[data-test-id=password] input").setValue(blockedUser.getPassword());
-        $(".button").shouldHave(Condition.text("Продолжить")).click();
-        $("[data-test-id=error-notification]").shouldBe(Condition.visible)
-                .shouldHave(Condition.text("Ошибка" +
-                        " Ошибка! Пользователь заблокирован"));
+    void shouldGetErrorIfWrongPassword() {
+        UserInfo wrongPasswordUser = generateWrongPasswordUser("active");
+        $("[data-test-id=login] input").setValue(wrongPasswordUser.getLogin());
+        $("[data-test-id=password] input").setValue(wrongPasswordUser.getPassword());
+        $("button[data-test-id=action-login]").click();
+        $("[data-test-id=error-notification] .notification__content")
+                .shouldHave(text("Неверно указан логин или пароль"));
     }
 
     @Test
-    @DisplayName("Should get error message if login with wrong login")
-    void shouldErrorWrongLogin() {
-        var registeredUser = getRegisteredUser("active");
-        var wrongLogin = getRandomLogin();
-        $("[data-test-id=login] input").setValue(wrongLogin);
-        $("[data-test-id=password] input").setValue(registeredUser.getPassword());
-        $(".button").shouldHave(Condition.text("Продолжить")).click();
-        $("[data-test-id=error-notification]").shouldBe(Condition.visible)
-                .shouldHave(Condition.text("Ошибка" +
-                        " Ошибка! Неверно указан логин или пароль"));
-    }
-
-    @Test
-    @DisplayName("Should get error message if login with wrong password")
-    void shouldGetErrorWrongPassword() {
-        var registeredUser = getRegisteredUser("active");
-        var wrongPassword = getRandomPassword();
-        $("[data-test-id=login] input").setValue(registeredUser.getLogin());
-        $("[data-test-id=password] input").setValue(wrongPassword);
-        $(".button").shouldHave(Condition.text("Продолжить")).click();
-        $("[data-test-id=error-notification]").shouldBe(Condition.visible)
-                .shouldHave(Condition.text("Ошибка" +
-                        " Ошибка! Неверно указан логин или пароль"));
+    void shouldGetErrorIfWrongLogin() {
+        UserInfo wrongLoginUser = generateWrongLoginUser("active");
+        $("[data-test-id=login] input").setValue(wrongLoginUser.getLogin());
+        $("[data-test-id=password] input").setValue(wrongLoginUser.getPassword());
+        $("button[data-test-id=action-login]").click();
+        $("[data-test-id=error-notification] .notification__content")
+                .shouldHave(text("Неверно указан логин или пароль"));
     }
 }
